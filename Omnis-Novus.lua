@@ -4,6 +4,9 @@ local TweenService = game:GetService("TweenService")
 local StarterGui = game:GetService("StarterGui")
 local RunService = game:GetService("RunService")
 
+-- Script Version
+local VERSION = "v1.0.0"
+
 -- Material You 3 Colors (Dark Theme)
 local COLORS = {
     SURFACE = Color3.fromRGB(28, 27, 31),
@@ -235,9 +238,30 @@ local function createModernHUD()
     local statusContainer = Instance.new("Frame")
     statusContainer.Name = "StatusContainer"
     statusContainer.Size = UDim2.new(0, 300, 0, 50)
-    statusContainer.Position = UDim2.new(0.5, -150, 0, 40) -- Moved up to original UI position
+    statusContainer.Position = UDim2.new(0.5, -150, 0, 10) -- Adjusted to match original position
     statusContainer.BackgroundTransparency = 1
     statusContainer.Parent = hudGui
+    
+    -- Create version watermark
+    local watermark = Instance.new("TextLabel")
+    watermark.Name = "VersionWatermark"
+    watermark.Size = UDim2.new(0, 200, 0, 20)
+    watermark.Position = UDim2.new(1, -210, 0, 0)
+    watermark.BackgroundTransparency = 1
+    watermark.Font = Enum.Font.GothamBold
+    watermark.TextSize = 14
+    watermark.TextColor3 = COLORS.PRIMARY
+    watermark.Text = "Omnis-Novus " .. VERSION
+    watermark.TextXAlignment = Enum.TextXAlignment.Right
+    watermark.Parent = statusContainer
+    
+    -- Add gradient to watermark text
+    local textGradient = Instance.new("UIGradient")
+    textGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, COLORS.PRIMARY),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+    })
+    textGradient.Parent = watermark
     
     -- Create health and energy bars
     local healthContainer, healthBar, healthLabel, healthPercent = createStatusBar(
@@ -246,7 +270,7 @@ local function createModernHUD()
         COLORS.HEALTH_CONTAINER,
         statusContainer
     )
-    healthContainer.Position = UDim2.new(0, 0, 0, 0)
+    healthContainer.Position = UDim2.new(0, 0, 0, 20) -- Adjusted position
     healthContainer.Parent = statusContainer
     
     local energyContainer, energyBar, energyLabel, energyPercent = createStatusBar(
@@ -255,7 +279,7 @@ local function createModernHUD()
         COLORS.ENERGY_CONTAINER,
         statusContainer
     )
-    energyContainer.Position = UDim2.new(0, 0, 0, 20)
+    energyContainer.Position = UDim2.new(0, 0, 0, 40) -- Adjusted position
     energyContainer.Parent = statusContainer
     
     hudGui.Parent = playerGui
