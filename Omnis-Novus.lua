@@ -24,13 +24,41 @@ local function createStatusBar(name, color, containerColor, parent)
     local barContainer = Instance.new("Frame")
     barContainer.Name = name .. "Container"
     barContainer.Size = UDim2.new(0, 300, 0, 12)
-    barContainer.BackgroundColor3 = containerColor
+    barContainer.BackgroundColor3 = COLORS.SURFACE
     barContainer.BorderSizePixel = 0
+    
+    -- Add dark edge container
+    local darkEdge = Instance.new("Frame")
+    darkEdge.Name = "DarkEdge"
+    darkEdge.Size = UDim2.new(1, 4, 1, 4)
+    darkEdge.Position = UDim2.new(0, -2, 0, -2)
+    darkEdge.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    darkEdge.BorderSizePixel = 0
+    darkEdge.ZIndex = 0
+    darkEdge.Parent = barContainer
+    
+    -- Add corner rounding to dark edge
+    local darkEdgeCorner = Instance.new("UICorner")
+    darkEdgeCorner.CornerRadius = UDim.new(0, 8)
+    darkEdgeCorner.Parent = darkEdge
     
     -- Add container corner rounding
     local containerCorner = Instance.new("UICorner")
     containerCorner.CornerRadius = UDim.new(0, 6)
     containerCorner.Parent = barContainer
+    
+    -- Create the background container
+    local backgroundContainer = Instance.new("Frame")
+    backgroundContainer.Name = "Background"
+    backgroundContainer.Size = UDim2.new(1, 0, 1, 0)
+    backgroundContainer.BackgroundColor3 = containerColor
+    backgroundContainer.BorderSizePixel = 0
+    backgroundContainer.Parent = barContainer
+    
+    -- Add corner rounding to background
+    local backgroundCorner = Instance.new("UICorner")
+    backgroundCorner.CornerRadius = UDim.new(0, 6)
+    backgroundCorner.Parent = backgroundContainer
     
     -- Create the actual bar
     local bar = Instance.new("Frame")
@@ -38,21 +66,35 @@ local function createStatusBar(name, color, containerColor, parent)
     bar.Size = UDim2.new(1, 0, 1, 0)
     bar.BackgroundColor3 = color
     bar.BorderSizePixel = 0
-    bar.Parent = barContainer
+    bar.Parent = backgroundContainer
     
     -- Add bar corner rounding
     local barCorner = Instance.new("UICorner")
     barCorner.CornerRadius = UDim.new(0, 6)
     barCorner.Parent = bar
     
+    -- Add value label (percentage)
+    local percentLabel = Instance.new("TextLabel")
+    percentLabel.Name = name .. "Percent"
+    percentLabel.Size = UDim2.new(0, 45, 1, 0)
+    percentLabel.Position = UDim2.new(1, 10, 0, 0)
+    percentLabel.BackgroundTransparency = 1
+    percentLabel.Font = Enum.Font.GothamBold
+    percentLabel.TextColor3 = color
+    percentLabel.TextSize = 12
+    percentLabel.Text = "100%"
+    percentLabel.Parent = barContainer
+    
     -- Add text label
     local label = Instance.new("TextLabel")
     label.Name = name .. "Text"
-    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Size = UDim2.new(1, -50, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
     label.BackgroundTransparency = 1
     label.Font = Enum.Font.GothamBold
     label.TextColor3 = COLORS.ON_SURFACE
     label.TextSize = 12
+    label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = barContainer
     
     -- Add subtle gradient
@@ -64,28 +106,22 @@ local function createStatusBar(name, color, containerColor, parent)
     gradient.Rotation = 90
     gradient.Parent = bar
     
-    -- Add glow effect
-    local glow = Instance.new("ImageLabel")
-    glow.Name = "Glow"
-    glow.BackgroundTransparency = 1
-    glow.Image = "rbxassetid://7668647110"
-    glow.ImageColor3 = color
-    glow.ImageTransparency = 0.85
-    glow.Size = UDim2.new(1, 20, 1, 20)
-    glow.Position = UDim2.new(0, -10, 0, -10)
-    glow.ZIndex = 0
-    glow.Parent = barContainer
-    
-    return barContainer, bar, label
+    return barContainer, bar, label, percentLabel
 end
 
 -- Function to update the status bars
-local function updateStatusBar(bar, label, current, max)
-    local percentage = current / max
-    TweenService:Create(bar, TweenInfo.new(0.3), {
-        Size = UDim2.new(percentage, 0, 1, 0)
-    }):Play()
-    label.Text = string.format("%d/%d", current, max)
+local function updateHUD(components, health, maxHealth, energy, maxEnergy)
+    local function updateBar(bar, label, percentLabel, current, max)
+        local percentage = current / max
+        TweenService:Create(bar, TweenInfo.new(0.3), {
+            Size = UDim2.new(percentage, 0, 1, 0)
+        }):Play()
+        label.Text = string.format("%d/%d", current, max)
+        percentLabel.Text = string.format("%d%%", math.floor(percentage * 100))
+    end
+    
+    updateBar(components.healthBar, components.healthLabel, components.healthPercent, health, maxHealth)
+    updateBar(components.energyBar, components.energyLabel, components.energyPercent, energy, maxEnergy)
 end
 
 -- Function to hide default health bar and Bloxfruit GUI elements
@@ -199,12 +235,12 @@ local function createModernHUD()
     local statusContainer = Instance.new("Frame")
     statusContainer.Name = "StatusContainer"
     statusContainer.Size = UDim2.new(0, 300, 0, 50)
-    statusContainer.Position = UDim2.new(0.5, -150, 1, -80)
+    statusContainer.Position = UDim2.new(0.5, -150, 0, 40) -- Moved up to original UI position
     statusContainer.BackgroundTransparency = 1
     statusContainer.Parent = hudGui
     
     -- Create health and energy bars
-    local healthContainer, healthBar, healthLabel = createStatusBar(
+    local healthContainer, healthBar, healthLabel, healthPercent = createStatusBar(
         "Health",
         COLORS.HEALTH_BAR,
         COLORS.HEALTH_CONTAINER,
@@ -213,7 +249,7 @@ local function createModernHUD()
     healthContainer.Position = UDim2.new(0, 0, 0, 0)
     healthContainer.Parent = statusContainer
     
-    local energyContainer, energyBar, energyLabel = createStatusBar(
+    local energyContainer, energyBar, energyLabel, energyPercent = createStatusBar(
         "Energy",
         COLORS.ENERGY_BAR,
         COLORS.ENERGY_CONTAINER,
@@ -222,37 +258,17 @@ local function createModernHUD()
     energyContainer.Position = UDim2.new(0, 0, 0, 20)
     energyContainer.Parent = statusContainer
     
-    -- Add container for status effects/buffs above the bars
-    local buffContainer = Instance.new("Frame")
-    buffContainer.Name = "BuffContainer"
-    buffContainer.Size = UDim2.new(1, 0, 0, 30)
-    buffContainer.Position = UDim2.new(0, 0, 0, -40)
-    buffContainer.BackgroundTransparency = 1
-    buffContainer.Parent = statusContainer
-    
-    -- Add list layout for buff icons
-    local listLayout = Instance.new("UIListLayout")
-    listLayout.FillDirection = Enum.FillDirection.Horizontal
-    listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    listLayout.Padding = UDim.new(0, 5)
-    listLayout.Parent = buffContainer
-    
     hudGui.Parent = playerGui
     
     -- Return the components that need to be updated
     return {
         healthBar = healthBar,
         healthLabel = healthLabel,
+        healthPercent = healthPercent,
         energyBar = energyBar,
         energyLabel = energyLabel,
-        buffContainer = buffContainer
+        energyPercent = energyPercent
     }
-end
-
--- Function to update HUD with player stats
-local function updateHUD(components, health, maxHealth, energy, maxEnergy)
-    updateStatusBar(components.healthBar, components.healthLabel, health, maxHealth)
-    updateStatusBar(components.energyBar, components.energyLabel, energy, maxEnergy)
 end
 
 -- Function to initialize the modern interface
