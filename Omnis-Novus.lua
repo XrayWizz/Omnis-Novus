@@ -306,7 +306,7 @@ local function createModernHUD()
         COLORS.ENERGY_CONTAINER,
         statusContainer
     )
-    energyContainer.Position = UDim2.new(0, 0, 0, 28) -- Position for overlap
+    energyContainer.Position = UDim2.new(0, 0, 0, 32) -- Adjusted to be slightly lower (was 28)
     energyContainer.Parent = statusContainer
     
     -- Create health bar second (so it's in front)
