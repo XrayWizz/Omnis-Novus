@@ -178,8 +178,10 @@ local function hideExistingGUI()
     
     -- Function to hide GUI element
     local function hideElement(element)
-        if element then
-            element.Visible = false
+        if element and element.Name ~= "ModernHUD" then  -- Don't hide our UI
+            if element:IsA("Frame") or element:IsA("ImageLabel") then
+                element.Visible = false
+            end
         end
     end
     
@@ -187,7 +189,7 @@ local function hideExistingGUI()
     local function findAndHideGUI()
         -- Look through all ScreenGuis
         for _, gui in ipairs(playerGui:GetChildren()) do
-            if gui:IsA("ScreenGui") then
+            if gui:IsA("ScreenGui") and gui.Name ~= "ModernHUD" then  -- Don't process our UI
                 -- Search for common health/energy bar names and patterns
                 local elementsToHide = {
                     gui:FindFirstChild("Health", true),
@@ -196,7 +198,6 @@ local function hideExistingGUI()
                     gui:FindFirstChild("Energy", true),
                     gui:FindFirstChild("EnergyBar", true),
                     gui:FindFirstChild("StaminaBar", true),
-                    -- Additional Bloxfruit specific elements
                     gui:FindFirstChild("HP", true),
                     gui:FindFirstChild("Stamina", true),
                     gui:FindFirstChild("Stats", true)
@@ -211,8 +212,9 @@ local function hideExistingGUI()
                 for _, descendant in ipairs(gui:GetDescendants()) do
                     if descendant:IsA("Frame") or descendant:IsA("ImageLabel") then
                         local name = descendant.Name:lower()
-                        if name:match("health") or name:match("hp") or 
-                           name:match("energy") or name:match("stamina") then
+                        if (name:match("health") or name:match("hp") or 
+                            name:match("energy") or name:match("stamina")) and
+                           descendant:IsDescendantOf(gui) then
                             hideElement(descendant)
                         end
                     end
@@ -224,10 +226,17 @@ local function hideExistingGUI()
     -- Initial hide
     findAndHideGUI()
     
-    -- Watch for new GUI elements
+    -- Watch for new GUI elements and keep our UI visible
     playerGui.ChildAdded:Connect(function(child)
-        if child:IsA("ScreenGui") then
+        if child:IsA("ScreenGui") and child.Name ~= "ModernHUD" then
             wait(0.1) -- Short delay to ensure GUI is fully loaded
+            findAndHideGUI()
+        end
+    end)
+    
+    -- Keep checking periodically to ensure game UI stays hidden
+    spawn(function()
+        while wait(1) do
             findAndHideGUI()
         end
     end)
@@ -269,10 +278,18 @@ local function createModernHUD()
     local player = Players.LocalPlayer
     local playerGui = player:WaitForChild("PlayerGui")
     
+    -- Remove existing ModernHUD if it exists
+    local existingHUD = player.PlayerGui:FindFirstChild("ModernHUD")
+    if existingHUD then
+        existingHUD:Destroy()
+    end
+    
     -- Create main HUD container
     local hudGui = Instance.new("ScreenGui")
     hudGui.Name = "ModernHUD"
     hudGui.ResetOnSpawn = false
+    hudGui.DisplayOrder = 999999  -- Ensure our UI stays on top
+    hudGui.IgnoreGuiInset = true  -- Prevent GUI from being affected by safe areas
     
     -- Create status bars container
     local statusContainer = Instance.new("Frame")
@@ -340,15 +357,10 @@ local function initModernInterface()
     local player = Players.LocalPlayer
     if not player then return end
     
-    -- Hide all existing GUI elements
+    -- Hide existing GUI elements first
     hideExistingGUI()
     
-    -- Remove existing HUD elements if they exist
-    local existingHUD = player.PlayerGui:FindFirstChild("ModernHUD")
-    if existingHUD then
-        existingHUD:Destroy()
-    end
-    
+    -- Create our modern HUD
     local components = createModernHUD()
     
     -- Function to update stats using heartbeat
@@ -363,9 +375,7 @@ local function initModernInterface()
         if player.Character then
             updateStats()
         else
-            -- Disconnect if character is not available
             heartbeatConnection:Disconnect()
-            -- Reconnect when character is available
             player.CharacterAdded:Wait()
             heartbeatConnection = RunService.Heartbeat:Connect(updateStats)
         end
@@ -373,8 +383,10 @@ local function initModernInterface()
     
     -- Handle character changes
     player.CharacterAdded:Connect(function()
-        wait(0.1) -- Short delay to ensure character is fully loaded
+        wait(0.1)
         updateStats()
+        -- Ensure game UI is still hidden after character respawn
+        hideExistingGUI()
     end)
 end
 
