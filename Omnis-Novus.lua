@@ -15,11 +15,11 @@ local COLORS = {
     PRIMARY = Color3.fromRGB(208, 188, 255),
     ON_PRIMARY = Color3.fromRGB(55, 30, 115),
     OUTLINE = Color3.fromRGB(147, 143, 153),
-    -- Health and Energy specific colors
-    HEALTH_BAR = Color3.fromRGB(141, 255, 141),    -- Soft green
-    HEALTH_CONTAINER = Color3.fromRGB(24, 39, 24), -- Dark green container
-    ENERGY_BAR = Color3.fromRGB(79, 195, 247),     -- Soft blue
-    ENERGY_CONTAINER = Color3.fromRGB(19, 29, 39)  -- Dark blue container
+    -- Health and Energy specific colors (darker versions)
+    HEALTH_BAR = Color3.fromRGB(39, 174, 96),      -- Darker emerald green
+    HEALTH_CONTAINER = Color3.fromRGB(20, 83, 45), -- Very dark green container
+    ENERGY_BAR = Color3.fromRGB(41, 128, 185),     -- Darker blue
+    ENERGY_CONTAINER = Color3.fromRGB(19, 62, 89)  -- Very dark blue container
 }
 
 -- Function to create a modern status bar
@@ -30,20 +30,47 @@ local function createStatusBar(name, color, containerColor, parent)
     barContainer.BackgroundColor3 = COLORS.SURFACE
     barContainer.BorderSizePixel = 0
     
-    -- Add dark edge container
+    -- Add outer dark edge (new)
+    local outerEdge = Instance.new("Frame")
+    outerEdge.Name = "OuterEdge"
+    outerEdge.Size = UDim2.new(1, 8, 1, 8)
+    outerEdge.Position = UDim2.new(0, -4, 0, -4)
+    outerEdge.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+    outerEdge.BorderSizePixel = 0
+    outerEdge.ZIndex = -2
+    outerEdge.Parent = barContainer
+    
+    -- Add corner rounding to outer edge
+    local outerEdgeCorner = Instance.new("UICorner")
+    outerEdgeCorner.CornerRadius = UDim.new(0, 10)
+    outerEdgeCorner.Parent = outerEdge
+    
+    -- Add dark edge container (inner)
     local darkEdge = Instance.new("Frame")
     darkEdge.Name = "DarkEdge"
     darkEdge.Size = UDim2.new(1, 4, 1, 4)
     darkEdge.Position = UDim2.new(0, -2, 0, -2)
-    darkEdge.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    darkEdge.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     darkEdge.BorderSizePixel = 0
-    darkEdge.ZIndex = 0
+    darkEdge.ZIndex = -1
     darkEdge.Parent = barContainer
     
     -- Add corner rounding to dark edge
     local darkEdgeCorner = Instance.new("UICorner")
     darkEdgeCorner.CornerRadius = UDim.new(0, 8)
     darkEdgeCorner.Parent = darkEdge
+    
+    -- Add shadow effect (new)
+    local shadow = Instance.new("ImageLabel")
+    shadow.Name = "Shadow"
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://7668647110"
+    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.ImageTransparency = 0.7
+    shadow.Size = UDim2.new(1, 12, 1, 12)
+    shadow.Position = UDim2.new(0, -6, 0, -6)
+    shadow.ZIndex = -3
+    shadow.Parent = barContainer
     
     -- Add container corner rounding
     local containerCorner = Instance.new("UICorner")
@@ -86,19 +113,32 @@ local function createStatusBar(name, color, containerColor, parent)
     percentLabel.TextColor3 = color
     percentLabel.TextSize = 12
     percentLabel.Text = "100%"
+    percentLabel.TextStrokeTransparency = 0.5
+    percentLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     percentLabel.Parent = barContainer
     
     -- Add text label
     local label = Instance.new("TextLabel")
     label.Name = name .. "Text"
-    label.Size = UDim2.new(1, -50, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
     label.BackgroundTransparency = 1
     label.Font = Enum.Font.GothamBold
     label.TextColor3 = COLORS.ON_SURFACE
     label.TextSize = 12
-    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextXAlignment = Enum.TextXAlignment.Center
+    label.TextStrokeTransparency = 0.5
+    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     label.Parent = barContainer
+
+    -- Create a stroke effect for better visibility
+    local textStroke = Instance.new("UIStroke")
+    textStroke.Color = Color3.fromRGB(0, 0, 0)
+    textStroke.Thickness = 1
+    textStroke.Parent = label
+
+    local percentStroke = textStroke:Clone()
+    percentStroke.Parent = percentLabel
     
     -- Add subtle gradient
     local gradient = Instance.new("UIGradient")
