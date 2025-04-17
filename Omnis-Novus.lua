@@ -88,9 +88,70 @@ local function updateStatusBar(bar, label, current, max)
     label.Text = string.format("%d/%d", current, max)
 end
 
--- Function to hide default health bar
-local function hideDefaultHealthBar()
+-- Function to hide default health bar and Bloxfruit GUI elements
+local function hideExistingGUI()
+    -- Hide default Roblox health bar
     StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+    
+    -- Get player GUI
+    local player = Players.LocalPlayer
+    local playerGui = player:WaitForChild("PlayerGui")
+    
+    -- Function to hide GUI element
+    local function hideElement(element)
+        if element then
+            element.Visible = false
+        end
+    end
+    
+    -- Function to search and hide health/energy related GUI
+    local function findAndHideGUI()
+        -- Look through all ScreenGuis
+        for _, gui in ipairs(playerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") then
+                -- Search for common health/energy bar names and patterns
+                local elementsToHide = {
+                    gui:FindFirstChild("Health", true),
+                    gui:FindFirstChild("HealthBar", true),
+                    gui:FindFirstChild("HPBar", true),
+                    gui:FindFirstChild("Energy", true),
+                    gui:FindFirstChild("EnergyBar", true),
+                    gui:FindFirstChild("StaminaBar", true),
+                    -- Additional Bloxfruit specific elements
+                    gui:FindFirstChild("HP", true),
+                    gui:FindFirstChild("Stamina", true),
+                    gui:FindFirstChild("Stats", true)
+                }
+                
+                -- Hide each found element
+                for _, element in ipairs(elementsToHide) do
+                    hideElement(element)
+                end
+                
+                -- Try to find bars by their properties
+                for _, descendant in ipairs(gui:GetDescendants()) do
+                    if descendant:IsA("Frame") or descendant:IsA("ImageLabel") then
+                        local name = descendant.Name:lower()
+                        if name:match("health") or name:match("hp") or 
+                           name:match("energy") or name:match("stamina") then
+                            hideElement(descendant)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Initial hide
+    findAndHideGUI()
+    
+    -- Watch for new GUI elements
+    playerGui.ChildAdded:Connect(function(child)
+        if child:IsA("ScreenGui") then
+            wait(0.1) -- Short delay to ensure GUI is fully loaded
+            findAndHideGUI()
+        end
+    end)
 end
 
 -- Function to get player stats
@@ -199,8 +260,8 @@ local function initModernInterface()
     local player = Players.LocalPlayer
     if not player then return end
     
-    -- Hide default health bar
-    hideDefaultHealthBar()
+    -- Hide all existing GUI elements
+    hideExistingGUI()
     
     -- Remove existing HUD elements if they exist
     local existingHUD = player.PlayerGui:FindFirstChild("ModernHUD")
