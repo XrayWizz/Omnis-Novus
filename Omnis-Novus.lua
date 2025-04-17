@@ -295,49 +295,37 @@ local function createModernHUD()
     local statusContainer = Instance.new("Frame")
     statusContainer.Name = "StatusContainer"
     statusContainer.Size = UDim2.new(0, 300, 0, 50)
-    statusContainer.Position = UDim2.new(0.5, -150, 0, 10) -- Adjusted to match original position
+    statusContainer.Position = UDim2.new(0.5, -150, 0.425, 0)  -- Adjusted to match original Bloxfruit UI position
     statusContainer.BackgroundTransparency = 1
     statusContainer.Parent = hudGui
     
-    -- Create version watermark
-    local watermark = Instance.new("TextLabel")
-    watermark.Name = "VersionWatermark"
-    watermark.Size = UDim2.new(0, 200, 0, 20)
-    watermark.Position = UDim2.new(1, -210, 0, 0)
-    watermark.BackgroundTransparency = 1
-    watermark.Font = Enum.Font.GothamBold
-    watermark.TextSize = 14
-    watermark.TextColor3 = COLORS.PRIMARY
-    watermark.Text = "Omnis-Novus " .. VERSION
-    watermark.TextXAlignment = Enum.TextXAlignment.Right
-    watermark.Parent = statusContainer
-    
-    -- Add gradient to watermark text
-    local textGradient = Instance.new("UIGradient")
-    textGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, COLORS.PRIMARY),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
-    })
-    textGradient.Parent = watermark
-    
-    -- Create health and energy bars
-    local healthContainer, healthBar, healthLabel, healthPercent = createStatusBar(
-        "Health",
-        COLORS.HEALTH_BAR,
-        COLORS.HEALTH_CONTAINER,
-        statusContainer
-    )
-    healthContainer.Position = UDim2.new(0, 0, 0, 20) -- Adjusted position
-    healthContainer.Parent = statusContainer
-    
+    -- Create energy bar first (so it's behind health bar)
     local energyContainer, energyBar, energyLabel, energyPercent = createStatusBar(
         "Energy",
         COLORS.ENERGY_BAR,
         COLORS.ENERGY_CONTAINER,
         statusContainer
     )
-    energyContainer.Position = UDim2.new(0, 0, 0, 40) -- Adjusted position
+    energyContainer.Position = UDim2.new(0, 0, 0, 28) -- Position for overlap
     energyContainer.Parent = statusContainer
+    
+    -- Create health bar second (so it's in front)
+    local healthContainer, healthBar, healthLabel, healthPercent = createStatusBar(
+        "Health",
+        COLORS.HEALTH_BAR,
+        COLORS.HEALTH_CONTAINER,
+        statusContainer
+    )
+    healthContainer.Position = UDim2.new(0, 0, 0, 20)
+    healthContainer.Parent = statusContainer
+    
+    -- Adjust ZIndex to ensure proper layering
+    healthContainer.ZIndex = 2
+    for _, child in pairs(healthContainer:GetDescendants()) do
+        if child:IsA("GuiObject") then
+            child.ZIndex = child.ZIndex + 2
+        end
+    end
     
     hudGui.Parent = playerGui
     
