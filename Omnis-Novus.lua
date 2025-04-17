@@ -1,6 +1,8 @@
 -- Omnis-Novus Interface Overhaul Script
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
 
 -- Material You 3 Colors (Dark Theme)
 local COLORS = {
@@ -86,6 +88,42 @@ local function updateStatusBar(bar, label, current, max)
     label.Text = string.format("%d/%d", current, max)
 end
 
+-- Function to hide default health bar
+local function hideDefaultHealthBar()
+    StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+end
+
+-- Function to get player stats
+local function getPlayerStats(player)
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    -- Get values from the game
+    local health = humanoid.Health
+    local maxHealth = humanoid.MaxHealth
+    
+    -- Try to get energy values from different possible sources
+    local energy, maxEnergy = 15595, 15595 -- Default values
+    
+    -- Check for energy in different possible locations
+    local possibleEnergyPaths = {
+        character:FindFirstChild("Energy"),
+        character:FindFirstChild("Stamina"),
+        player:FindFirstChild("Energy"),
+        player:FindFirstChild("Stamina")
+    }
+    
+    for _, value in ipairs(possibleEnergyPaths) do
+        if value and value:IsA("NumberValue") then
+            energy = value.Value
+            maxEnergy = value.MaxValue or energy
+            break
+        end
+    end
+    
+    return health, maxHealth, energy, maxEnergy
+end
+
 -- Function to create the modern HUD
 local function createModernHUD()
     local player = Players.LocalPlayer
@@ -161,203 +199,73 @@ local function initModernInterface()
     local player = Players.LocalPlayer
     if not player then return end
     
+    -- Hide default health bar
+    hideDefaultHealthBar()
+    
+    -- Remove existing HUD elements if they exist
+    local existingHUD = player.PlayerGui:FindFirstChild("ModernHUD")
+    if existingHUD then
+        existingHUD:Destroy()
+    end
+    
     local components = createModernHUD()
     
-    -- Example update (replace with actual game values)
+    -- Function to update stats using heartbeat
     local function updateStats()
-        -- Get the actual values from your game
-        local health = 13750  -- Example value from the image
-        local maxHealth = 13750
-        local energy = 15595  -- Example value from the image
-        local maxEnergy = 15595
-        
+        local health, maxHealth, energy, maxEnergy = getPlayerStats(player)
         updateHUD(components, health, maxHealth, energy, maxEnergy)
     end
     
-    -- Update stats periodically
-    spawn(function()
-        while wait(0.1) do
+    -- Connect to RunService.Heartbeat for live updates
+    local heartbeatConnection
+    heartbeatConnection = RunService.Heartbeat:Connect(function()
+        if player.Character then
             updateStats()
+        else
+            -- Disconnect if character is not available
+            heartbeatConnection:Disconnect()
+            -- Reconnect when character is available
+            player.CharacterAdded:Wait()
+            heartbeatConnection = RunService.Heartbeat:Connect(updateStats)
         end
     end)
-end
-
--- Initialize when the player is ready
-Players.PlayerAdded:Connect(initModernInterface)
-if Players.LocalPlayer then
-    initModernInterface()
-end
-
--- Create Material You 3 styled confirmation dialog
-local function createMaterialDialog()
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "OmnisNovusDialog"
-    gui.ResetOnSpawn = false
     
-    -- Background overlay
-    local overlay = Instance.new("Frame")
-    overlay.Name = "Overlay"
-    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    overlay.BackgroundTransparency = 0.5
-    overlay.Size = UDim2.new(1, 0, 1, 0)
-    overlay.Parent = gui
-    
-    -- Dialog container
-    local dialog = Instance.new("Frame")
-    dialog.Name = "Dialog"
-    dialog.Size = UDim2.new(0, 300, 0, 180)
-    dialog.Position = UDim2.new(0.5, -150, 0.5, -90)
-    dialog.BackgroundColor3 = COLORS.SURFACE_CONTAINER
-    dialog.Parent = overlay
-    
-    -- Add rounded corners
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 16)
-    corner.Parent = dialog
-    
-    -- Title
-    local title = Instance.new("TextLabel")
-    title.Name = "Title"
-    title.Size = UDim2.new(1, -40, 0, 40)
-    title.Position = UDim2.new(0, 20, 0, 20)
-    title.BackgroundTransparency = 1
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 24
-    title.TextColor3 = COLORS.ON_SURFACE
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Text = "Omnis-Novus"
-    title.Parent = dialog
-    
-    -- Message
-    local message = Instance.new("TextLabel")
-    message.Name = "Message"
-    message.Size = UDim2.new(1, -40, 0, 40)
-    message.Position = UDim2.new(0, 20, 0, 60)
-    message.BackgroundTransparency = 1
-    message.Font = Enum.Font.Gotham
-    message.TextSize = 16
-    message.TextColor3 = COLORS.ON_SURFACE
-    message.TextXAlignment = Enum.TextXAlignment.Left
-    message.Text = "Are you sure you want to run this script?"
-    message.Parent = dialog
-    
-    -- Buttons container
-    local buttonContainer = Instance.new("Frame")
-    buttonContainer.Name = "ButtonContainer"
-    buttonContainer.Size = UDim2.new(1, -40, 0, 40)
-    buttonContainer.Position = UDim2.new(0, 20, 1, -60)
-    buttonContainer.BackgroundTransparency = 1
-    buttonContainer.Parent = dialog
-    
-    -- Create button function
-    local function createButton(name, position, isPrimary)
-        local button = Instance.new("TextButton")
-        button.Name = name
-        button.Size = UDim2.new(0, 100, 1, 0)
-        button.Position = position
-        button.BackgroundColor3 = isPrimary and COLORS.PRIMARY or COLORS.SURFACE
-        button.TextColor3 = isPrimary and COLORS.ON_PRIMARY or COLORS.PRIMARY
-        button.Font = Enum.Font.GothamBold
-        button.TextSize = 14
-        button.Text = name
-        button.Parent = buttonContainer
-        
-        -- Add rounded corners to button
-        local buttonCorner = Instance.new("UICorner")
-        buttonCorner.CornerRadius = UDim.new(0, 8)
-        buttonCorner.Parent = button
-        
-        -- Add hover effect
-        button.MouseEnter:Connect(function()
-            TweenService:Create(button, TweenInfo.new(0.2), {
-                BackgroundTransparency = 0.1
-            }):Play()
-        end)
-        
-        button.MouseLeave:Connect(function()
-            TweenService:Create(button, TweenInfo.new(0.2), {
-                BackgroundTransparency = 0
-            }):Play()
-        end)
-        
-        return button
-    end
-    
-    -- Create Yes and No buttons
-    local noButton = createButton("No", UDim2.new(1, -100, 0, 0), false)
-    local yesButton = createButton("Yes", UDim2.new(1, -220, 0, 0), true)
-    
-    -- Add shadow
-    local shadow = Instance.new("ImageLabel")
-    shadow.Name = "Shadow"
-    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    shadow.BackgroundTransparency = 1
-    shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    shadow.Size = UDim2.new(1, 40, 1, 40)
-    shadow.ZIndex = -1
-    shadow.Image = "rbxassetid://1316045217"
-    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.ImageTransparency = 0.8
-    shadow.Parent = dialog
-    
-    -- Add entrance animation
-    dialog.Size = UDim2.new(0, 300, 0, 0)
-    dialog.Position = UDim2.new(0.5, -150, 0.5, 0)
-    overlay.BackgroundTransparency = 1
-    
-    TweenService:Create(overlay, TweenInfo.new(0.3), {
-        BackgroundTransparency = 0.5
-    }):Play()
-    
-    TweenService:Create(dialog, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-        Size = UDim2.new(0, 300, 0, 180),
-        Position = UDim2.new(0.5, -150, 0.5, -90)
-    }):Play()
-    
-    return gui, yesButton, noButton
-end
-
--- Show the dialog and handle responses
-local function showConfirmationDialog()
-    local dialog, yesButton, noButton = createMaterialDialog()
-    dialog.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
-    
-    local function cleanup()
-        local overlay = dialog.Overlay
-        local dialogFrame = overlay.Dialog
-        
-        -- Exit animation
-        TweenService:Create(overlay, TweenInfo.new(0.2), {
-            BackgroundTransparency = 1
-        }):Play()
-        
-        TweenService:Create(dialogFrame, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 300, 0, 0),
-            Position = UDim2.new(0.5, -150, 0.5, 0)
-        }).Completed:Connect(function()
-            dialog:Destroy()
-        end)
-    end
-    
-    -- Handle button clicks
-    yesButton.MouseButton1Click:Connect(function()
-        cleanup()
-        -- Place for the interface overhaul code
-        print("Starting interface overhaul...") -- Placeholder
-        -- TODO: Add your interface modification code here
-    end)
-    
-    noButton.MouseButton1Click:Connect(function()
-        cleanup()
-        print("Script cancelled by user")
+    -- Handle character changes
+    player.CharacterAdded:Connect(function()
+        wait(0.1) -- Short delay to ensure character is fully loaded
+        updateStats()
     end)
 end
 
--- Function to initialize the script
+-- Show the confirmation prompt (original style)
+local function showConfirmationPrompt()
+    local bindable = Instance.new("BindableFunction")
+    
+    function bindable.OnInvoke(response)
+        if response == "Yes" then
+            -- Initialize the modern interface
+            initModernInterface()
+            print("Starting interface overhaul...")
+        else
+            print("Script cancelled by user")
+        end
+    end
+
+    StarterGui:SetCore("SendNotification", {
+        Title = "Omnis-Novus",
+        Text = "Are you sure you want to run this script?",
+        Duration = 10,
+        Callback = bindable,
+        Button1 = "Yes",
+        Button2 = "No"
+    })
+end
+
+-- Function to initialize everything
 local function init()
     local player = Players.LocalPlayer
     if player then
-        showConfirmationDialog()
+        showConfirmationPrompt()
     end
 end
 
